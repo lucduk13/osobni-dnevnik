@@ -1,19 +1,20 @@
 import { createSignal, onMount } from "solid-js";
-import { supabase } from "./supabaseClient";
+import { supabase } from "./pocketbaseClient";
 import AuthPage from "./pages/AuthPage";
 import JournalPage from "./pages/JournalPage";
 
 export default function App() {
   const [session, setSession] = createSignal(null);
 
-  onMount(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    setSession(sessionData.session);
+  onMount(() => {
+    const session = pocketbase.authStore.model;
+    setSession(session);
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    pocketbase.authStore.onChange(() => {
+      setSession(pocketbase.authStore.model);
     });
   });
+
 
   return (
     <div class="min-h-screen bg-gray-100">

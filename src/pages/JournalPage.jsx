@@ -1,5 +1,5 @@
 import { createSignal, onMount } from "solid-js";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../pocketbaseClient";
 
 export default function JournalPage({ userId }) {
   const [entries, setEntries] = createSignal([]);
@@ -7,29 +7,39 @@ export default function JournalPage({ userId }) {
   const [newEntry, setNewEntry] = createSignal({ title: "", content: "", tags: "" });
 
   const fetchEntries = async () => {
-    const { data, error } = await supabase
-      .from("journal_entries")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-    if (!error) setEntries(data);
+    try {
+      const data = await pocketbase.collection('journal_entries').getFullList({
+        filter: `user_id = "${userId}"`,
+        sort: '-created_at',
+      });
+      setEntries(data);
+    } catch (err) {
+      console.error(err.message);
+    }
   };
 
   const addEntry = async () => {
-    const { error } = await supabase.from("journal_entries").insert({
-      ...newEntry(),
-      user_id: userId,
-    });
-    if (!error) {
+    try {
+      await pocketbase.collection('journal_entries').create({
+        ...newEntry(),
+        user_id: userId,
+      });
       setNewEntry({ title: "", content: "", tags: "" });
       fetchEntries();
+    } catch (err) {
+      console.error(err.message);
     }
   };
 
   const deleteEntry = async (id) => {
-    const { error } = await supabase.from("journal_entries").delete().eq("id", id);
-    if (!error) fetchEntries();
+    try {
+      await pocketbase.collection('journal_entries').delete(id);
+      fetchEntries();
+    } catch (err) {
+      console.error(err.message);
+    }
   };
+
 
   onMount(() => {
     fetchEntries();
